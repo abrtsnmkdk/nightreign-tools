@@ -5,11 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ELDEN RING NIGHTREIGN 補助ツール</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        section { margin-bottom: 20px; }
-        input, textarea { width: 100%; margin: 5px 0; }
-        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
-        #map { max-width: 100%; height: auto; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            background-color: #f5f5f5;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { 
+            text-align: center; 
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+        h2 { 
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        section { 
+            margin-bottom: 25px; 
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label { 
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        select, input, textarea { 
+            width: 100%; 
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.5);
+        }
+        button { 
+            padding: 12px 20px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #bossPrediction { 
+            margin-top: 15px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #333;
+            min-height: 20px;
+        }
+        #map { 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -20,88 +103,141 @@
         <label for="day1">1日目ボス:</label>
         <select id="day1">
             <option value="">選択してください</option>
-            <option value="Margit">Margit</option>
-            <option value="Godrick">Godrick</option>
-            <option value="Red Wolf">Red Wolf of Radagon</option>
-            <option value="Rennala">Rennala, Queen of the Full Moon</option>
-            <option value="Radahn">Starscourge Radahn</option>
-            <option value="Morgott">Morgott, the Omen King</option>
-            <option value="Rykard">Rykard, Lord of Blasphemy</option>
-            <option value="Malenia">Malenia, Blade of Miquella</option>
-            <option value="Mohg">Mohg, Lord of Blood</option>
         </select>
         <label for="day2">2日目ボス:</label>
         <select id="day2">
             <option value="">選択してください</option>
-            <option value="Margit">Margit</option>
-            <option value="Godrick">Godrick</option>
-            <option value="Red Wolf">Red Wolf of Radagon</option>
-            <option value="Rennala">Rennala, Queen of the Full Moon</option>
-            <option value="Radahn">Starscourge Radahn</option>
-            <option value="Morgott">Morgott, the Omen King</option>
-            <option value="Rykard">Rykard, Lord of Blasphemy</option>
-            <option value="Malenia">Malenia, Blade of Miquella</option>
-            <option value="Mohg">Mohg, Lord of Blood</option>
         </select>
         <button onclick="predictBoss()">3日目ボスを予測</button>
-        <p id="bossPrediction"></p>
-    </section>
-    
-    <section>
-        <h2>MAP表示</h2>
-        <img id="map" src="https://example.com/map.jpg" alt="ゲームMAP"> <!-- 実際のMAP画像URLに置き換え -->
+        <div id="bossPrediction"></div>
     </section>
     
     <section>
         <h2>メモと攻略情報</h2>
-        <textarea id="notes" rows="10" placeholder="メモを入力"></textarea>
+        <textarea id="notes" placeholder="メモを入力"></textarea>
         <button onclick="saveNotes()">保存</button>
         <button onclick="loadNotes()">読み込み</button>
-        <p id="savedNotes"></p>
     </section>
     
     <script>
-        const predictionMap = {
-            "Margit-Godrick": "Red Wolf",
-            "Godrick-Red Wolf": "Rennala",
-            "Red Wolf-Rennala": "Radahn",
-            "Rennala-Radahn": "Morgott",
-            "Radahn-Morgott": "Rykard",
-            "Morgott-Rykard": "Malenia",
-            "Rykard-Malenia": "Mohg",
-            "Malenia-Mohg": "Margit",
-            "Mohg-Margit": "Godrick",
-            // 必要に応じて追加
+        // ボスデータを保持するオブジェクト
+        let bossData = {
+            day1: {},  // { ボス名: [予測される3日目ボス] }
+            day2: {}   // { ボス名: [予測される3日目ボス] }
         };
-
+        
+        // bosses.mdを読み込んで解析
+        async function loadBossData() {
+            try {
+                const response = await fetch('bosses.md');
+                const text = await response.text();
+                parseBossData(text);
+                initializeSelects();
+            } catch (error) {
+                console.error('bosses.mdの読み込みに失敗しました:', error);
+                document.getElementById('bossPrediction').innerText = 'データ読み込みエラー';
+            }
+        }
+        
+        // bosses.mdを解析
+        function parseBossData(text) {
+            const lines = text.split('\n');
+            let currentSection = null;
+            
+            for (let line of lines) {
+                // セクション判定
+                if (line.includes('## 1日目ボス候補')) {
+                    currentSection = 'day1';
+                } else if (line.includes('## 2日目ボス候補')) {
+                    currentSection = 'day2';
+                }
+                
+                // ボス情報行を解析（「- ボス名\t\t：予測1 or 予測2...」形式）
+                if (line.trim().startsWith('-') && line.includes('：')) {
+                    const parts = line.split('：');
+                    if (parts.length === 2) {
+                        const bossName = parts[0].replace('- ', '').trim();
+                        const predictions = parts[1]
+                            .split(' or ')
+                            .map(p => p.trim())
+                            .filter(p => p.length > 0);
+                        
+                        if (currentSection && bossName) {
+                            bossData[currentSection][bossName] = predictions;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // セレクトボックスを初期化
+        function initializeSelects() {
+            const day1Select = document.getElementById('day1');
+            const day2Select = document.getElementById('day2');
+            
+            // 1日目ボスをセレクトに追加
+            Object.keys(bossData.day1).forEach(boss => {
+                const option = document.createElement('option');
+                option.value = boss;
+                option.text = boss;
+                day1Select.appendChild(option);
+            });
+            
+            // 2日目ボスをセレクトに追加
+            Object.keys(bossData.day2).forEach(boss => {
+                const option = document.createElement('option');
+                option.value = boss;
+                option.text = boss;
+                day2Select.appendChild(option);
+            });
+        }
+        
+        // 3日目ボスを予測
         function predictBoss() {
             const day1 = document.getElementById('day1').value;
             const day2 = document.getElementById('day2').value;
-            const result = document.getElementById('bossPrediction');
-
+            const resultDiv = document.getElementById('bossPrediction');
+            
             if (!day1 || !day2) {
-                result.innerText = "両方のボスを選択してください。";
+                resultDiv.innerText = '両方のボスを選択してください。';
                 return;
             }
-
-            const key = `${day1}-${day2}`;
-            const prediction = predictionMap[key] || "不明（組み合わせを調整してください）";
-            result.innerText = `予測された3日目ボス: ${prediction}`;
+            
+            const day1Predictions = bossData.day1[day1] || [];
+            const day2Predictions = bossData.day2[day2] || [];
+            
+            // 両方の予測リストに共通するボスを取得
+            const commonPredictions = day1Predictions.filter(boss => 
+                day2Predictions.includes(boss)
+            );
+            
+            if (commonPredictions.length > 0) {
+                resultDiv.innerText = `予測された3日目ボス: ${commonPredictions.join(' / ')}`;
+            } else {
+                // 共通部分がない場合は、すべての候補を表示
+                const allPredictions = [...new Set([...day1Predictions, ...day2Predictions])];
+                resultDiv.innerText = `確実な予測なし。候補: ${allPredictions.join(' / ')}`;
+            }
         }
         
+        // メモを保存
         function saveNotes() {
             const notes = document.getElementById('notes').value;
-            localStorage.setItem('notes', notes);
+            localStorage.setItem('nightreignNotes', notes);
             alert('メモを保存しました');
         }
         
+        // メモを読み込み
         function loadNotes() {
-            const notes = localStorage.getItem('notes') || '';
+            const notes = localStorage.getItem('nightreignNotes') || '';
             document.getElementById('notes').value = notes;
-            document.getElementById('savedNotes').innerText = notes;
         }
         
-        window.onload = loadNotes;
+        // ページ読み込み時に実行
+        window.addEventListener('load', () => {
+            loadBossData();
+            loadNotes();
+        });
     </script>
 </body>
 </html>
