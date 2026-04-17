@@ -106,7 +106,7 @@
         <select id="day2" disabled>
             <option value="">選択してください</option>
         </select>
-        <div id="bossPrediction">1stボスを選択してください。</div>
+        <div id="bossPrediction">1日目ボスを選択してください。</div>
     </section>
     
     <script>
@@ -230,7 +230,7 @@
             const resultDiv = document.getElementById('bossPrediction');
 
             if (!day1) {
-                resultDiv.innerText = '1stボスを選択してください。';
+                resultDiv.innerText = '1日目ボスを選択してください。';
                 return;
             }
 
@@ -239,9 +239,9 @@
 
             if (!day2) {
                 if (firstThirds.length > 0) {
-                    resultDiv.innerText = `3rdボス: ${firstThirds.join(' / ')}`;
+                    resultDiv.innerText = `3日目ボス: ${firstThirds.join(' / ')}`;
                 } else {
-                    resultDiv.innerText = 'この1stボスに対応する3rdボスはありません。';
+                    resultDiv.innerText = 'この1日目ボスに対応する3日目ボスはありません。';
                 }
                 return;
             }
@@ -250,9 +250,9 @@
             const commonThirds = bossMatrix.third.filter(third => firstRow[third] && secondRow[third]);
 
             if (commonThirds.length > 0) {
-                resultDiv.innerText = `3rdボス: ${commonThirds.join(' / ')}`;
+                resultDiv.innerText = `3日目ボス: ${commonThirds.join(' / ')}`;
             } else {
-                resultDiv.innerText = 'この組み合わせでは3rdボスが存在しません。';
+                resultDiv.innerText = 'この組み合わせでは3日目ボスが存在しません。';
             }
         }
 
