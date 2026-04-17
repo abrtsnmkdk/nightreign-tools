@@ -103,11 +103,10 @@
             <option value="">選択してください</option>
         </select>
         <label for="day2">2日目ボス:</label>
-        <select id="day2">
+        <select id="day2" disabled>
             <option value="">選択してください</option>
         </select>
-        <button onclick="predictBoss()">3日目ボスを予測</button>
-        <div id="bossPrediction"></div>
+        <div id="bossPrediction">1stボスを選択してください。</div>
     </section>
     
     <script>
@@ -177,19 +176,26 @@
 
             day1Select.addEventListener('change', () => {
                 filterSecondBosses();
+                updatePrediction();
             });
+            day2Select.addEventListener('change', updatePrediction);
         }
         
         function filterSecondBosses() {
             const selectedFirst = document.getElementById('day1').value;
             const day2Select = document.getElementById('day2');
             const currentSecond = day2Select.value;
-            const previousOptions = Array.from(day2Select.options);
 
-            // いちど2ndセレクトを初期化
             day2Select.innerHTML = '<option value="">選択してください</option>';
 
-            const validSeconds = selectedFirst ? getValidSecondBosses(selectedFirst) : Object.keys(bossMatrix.second);
+            if (!selectedFirst) {
+                day2Select.disabled = true;
+                day2Select.value = '';
+                return;
+            }
+
+            day2Select.disabled = false;
+            const validSeconds = getValidSecondBosses(selectedFirst);
 
             validSeconds.sort().forEach(boss => {
                 const option = document.createElement('option');
@@ -198,10 +204,10 @@
                 day2Select.appendChild(option);
             });
 
-            if (selectedFirst && currentSecond && !validSeconds.includes(currentSecond)) {
-                day2Select.value = '';
-            } else {
+            if (currentSecond && validSeconds.includes(currentSecond)) {
                 day2Select.value = currentSecond;
+            } else {
+                day2Select.value = '';
             }
         }
         
@@ -217,42 +223,41 @@
                 });
             });
         }
-        
-        function predictBoss() {
+
+        function updatePrediction() {
             const day1 = document.getElementById('day1').value;
             const day2 = document.getElementById('day2').value;
             const resultDiv = document.getElementById('bossPrediction');
 
-            if (!day1 || !day2) {
-                resultDiv.innerText = '両方のボスを選択してください。';
+            if (!day1) {
+                resultDiv.innerText = '1stボスを選択してください。';
                 return;
             }
 
             const firstRow = bossMatrix.first[day1] || {};
+            const firstThirds = bossMatrix.third.filter(third => firstRow[third]);
+
+            if (!day2) {
+                if (firstThirds.length > 0) {
+                    resultDiv.innerText = `3rdボス: ${firstThirds.join(' / ')}`;
+                } else {
+                    resultDiv.innerText = 'この1stボスに対応する3rdボスはありません。';
+                }
+                return;
+            }
+
             const secondRow = bossMatrix.second[day2] || {};
             const commonThirds = bossMatrix.third.filter(third => firstRow[third] && secondRow[third]);
 
             if (commonThirds.length > 0) {
-                resultDiv.innerText = `予測された3rdボス: ${commonThirds.join(' / ')}`;
+                resultDiv.innerText = `3rdボス: ${commonThirds.join(' / ')}`;
             } else {
                 resultDiv.innerText = 'この組み合わせでは3rdボスが存在しません。';
             }
         }
 
-        function saveNotes() {
-            const notes = document.getElementById('notes').value;
-            localStorage.setItem('nightreignNotes', notes);
-            alert('メモを保存しました');
-        }
-
-        function loadNotes() {
-            const notes = localStorage.getItem('nightreignNotes') || '';
-            document.getElementById('notes').value = notes;
-        }
-
         window.addEventListener('load', () => {
             loadBossData();
-            loadNotes();
         });
     </script>
 </body>
