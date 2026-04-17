@@ -120,120 +120,145 @@
     </section>
     
     <script>
-        // ボスデータを保持するオブジェクト
-        let bossData = {
-            day1: {},  // { ボス名: [予測される3日目ボス] }
-            day2: {}   // { ボス名: [予測される3日目ボス] }
+        const bossMatrix = {
+            first: {},    // { 1stボス: { 3rdボス: true } }
+            second: {},   // { 2ndボス: { 3rdボス: true } }
+            third: []     // 3rdボスの順序
         };
+        const ignoredThirdBossForFilter = ['ナメレス'];
         
-        // bosses.mdを読み込んで解析
         async function loadBossData() {
             try {
-                const response = await fetch('bosses.md');
+                const response = await fetch('bosses-matrix.csv');
                 const text = await response.text();
-                parseBossData(text);
+                parseBossMatrix(text);
                 initializeSelects();
             } catch (error) {
-                console.error('bosses.mdの読み込みに失敗しました:', error);
+                console.error('bosses-matrix.csvの読み込みに失敗しました:', error);
                 document.getElementById('bossPrediction').innerText = 'データ読み込みエラー';
             }
         }
         
-        // bosses.mdを解析
-        function parseBossData(text) {
-            const lines = text.split('\n');
-            let currentSection = null;
-            
-            for (let line of lines) {
-                // セクション判定
-                if (line.includes('## 1日目ボス候補')) {
-                    currentSection = 'day1';
-                } else if (line.includes('## 2日目ボス候補')) {
-                    currentSection = 'day2';
-                }
-                
-                // ボス情報行を解析（「- ボス名\t\t：予測1 or 予測2...」形式）
-                if (line.trim().startsWith('-') && line.includes('：')) {
-                    const parts = line.split('：');
-                    if (parts.length === 2) {
-                        const bossName = parts[0].replace('- ', '').trim();
-                        const predictions = parts[1]
-                            .split(' or ')
-                            .map(p => p.trim())
-                            .filter(p => p.length > 0);
-                        
-                        if (currentSection && bossName) {
-                            bossData[currentSection][bossName] = predictions;
-                        }
-                    }
+        function parseBossMatrix(text) {
+            const lines = text.trim().split(/\r?\n/);
+            if (lines.length === 0) return;
+            const header = lines[0].split(',').slice(2).map(cell => cell.trim()).filter(cell => cell);
+            bossMatrix.third = header;
+
+            for (let i = 1; i < lines.length; i++) {
+                const columns = lines[i].split(',');
+                if (columns.length < 2) continue;
+                const category = columns[0].trim();
+                const bossName = columns[1].trim();
+                if (!bossName) continue;
+
+                const row = {};
+                header.forEach((thirdBoss, index) => {
+                    const value = (columns[index + 2] || '').trim();
+                    row[thirdBoss] = value === '1';
+                });
+
+                if (category === '1stボス') {
+                    bossMatrix.first[bossName] = row;
+                } else if (category === '2ndボス') {
+                    bossMatrix.second[bossName] = row;
                 }
             }
         }
         
-        // セレクトボックスを初期化
         function initializeSelects() {
             const day1Select = document.getElementById('day1');
             const day2Select = document.getElementById('day2');
-            
-            // 1日目ボスをセレクトに追加
-            Object.keys(bossData.day1).forEach(boss => {
+
+            Object.keys(bossMatrix.first).sort().forEach(boss => {
                 const option = document.createElement('option');
                 option.value = boss;
                 option.text = boss;
                 day1Select.appendChild(option);
             });
-            
-            // 2日目ボスをセレクトに追加
-            Object.keys(bossData.day2).forEach(boss => {
+
+            Object.keys(bossMatrix.second).sort().forEach(boss => {
                 const option = document.createElement('option');
                 option.value = boss;
                 option.text = boss;
                 day2Select.appendChild(option);
             });
+
+            day1Select.addEventListener('change', () => {
+                filterSecondBosses();
+            });
         }
         
-        // 3日目ボスを予測
+        function filterSecondBosses() {
+            const selectedFirst = document.getElementById('day1').value;
+            const day2Select = document.getElementById('day2');
+            const currentSecond = day2Select.value;
+            const previousOptions = Array.from(day2Select.options);
+
+            // いちど2ndセレクトを初期化
+            day2Select.innerHTML = '<option value="">選択してください</option>';
+
+            const validSeconds = selectedFirst ? getValidSecondBosses(selectedFirst) : Object.keys(bossMatrix.second);
+
+            validSeconds.sort().forEach(boss => {
+                const option = document.createElement('option');
+                option.value = boss;
+                option.text = boss;
+                day2Select.appendChild(option);
+            });
+
+            if (selectedFirst && currentSecond && !validSeconds.includes(currentSecond)) {
+                day2Select.value = '';
+            } else {
+                day2Select.value = currentSecond;
+            }
+        }
+        
+        function getValidSecondBosses(firstBoss) {
+            const firstRow = bossMatrix.first[firstBoss];
+            if (!firstRow) return [];
+
+            return Object.keys(bossMatrix.second).filter(secondBoss => {
+                const secondRow = bossMatrix.second[secondBoss];
+                return bossMatrix.third.some(thirdBoss => {
+                    if (ignoredThirdBossForFilter.includes(thirdBoss)) return false;
+                    return firstRow[thirdBoss] && secondRow[thirdBoss];
+                });
+            });
+        }
+        
         function predictBoss() {
             const day1 = document.getElementById('day1').value;
             const day2 = document.getElementById('day2').value;
             const resultDiv = document.getElementById('bossPrediction');
-            
+
             if (!day1 || !day2) {
                 resultDiv.innerText = '両方のボスを選択してください。';
                 return;
             }
-            
-            const day1Predictions = bossData.day1[day1] || [];
-            const day2Predictions = bossData.day2[day2] || [];
-            
-            // 両方の予測リストに共通するボスを取得
-            const commonPredictions = day1Predictions.filter(boss => 
-                day2Predictions.includes(boss)
-            );
-            
-            if (commonPredictions.length > 0) {
-                resultDiv.innerText = `予測された3日目ボス: ${commonPredictions.join(' / ')}`;
+
+            const firstRow = bossMatrix.first[day1] || {};
+            const secondRow = bossMatrix.second[day2] || {};
+            const commonThirds = bossMatrix.third.filter(third => firstRow[third] && secondRow[third]);
+
+            if (commonThirds.length > 0) {
+                resultDiv.innerText = `予測された3rdボス: ${commonThirds.join(' / ')}`;
             } else {
-                // 共通部分がない場合は、すべての候補を表示
-                const allPredictions = [...new Set([...day1Predictions, ...day2Predictions])];
-                resultDiv.innerText = `確実な予測なし。候補: ${allPredictions.join(' / ')}`;
+                resultDiv.innerText = 'この組み合わせでは3rdボスが存在しません。';
             }
         }
-        
-        // メモを保存
+
         function saveNotes() {
             const notes = document.getElementById('notes').value;
             localStorage.setItem('nightreignNotes', notes);
             alert('メモを保存しました');
         }
-        
-        // メモを読み込み
+
         function loadNotes() {
             const notes = localStorage.getItem('nightreignNotes') || '';
             document.getElementById('notes').value = notes;
         }
-        
-        // ページ読み込み時に実行
+
         window.addEventListener('load', () => {
             loadBossData();
             loadNotes();
