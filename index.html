@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELDEN RING NIGHTREIGN 補助ツール</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        section { margin-bottom: 20px; }
+        input, textarea { width: 100%; margin: 5px 0; }
+        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        #map { max-width: 100%; height: auto; }
+    </style>
+</head>
+<body>
+    <h1>ELDEN RING NIGHTREIGN 補助ツール</h1>
+    
+    <section>
+        <h2>ボス予測ツール</h2>
+        <label for="day1">1日目ボス:</label>
+        <select id="day1">
+            <option value="">選択してください</option>
+            <option value="Margit">Margit</option>
+            <option value="Godrick">Godrick</option>
+            <option value="Red Wolf">Red Wolf of Radagon</option>
+            <option value="Rennala">Rennala, Queen of the Full Moon</option>
+            <option value="Radahn">Starscourge Radahn</option>
+            <option value="Morgott">Morgott, the Omen King</option>
+            <option value="Rykard">Rykard, Lord of Blasphemy</option>
+            <option value="Malenia">Malenia, Blade of Miquella</option>
+            <option value="Mohg">Mohg, Lord of Blood</option>
+        </select>
+        <label for="day2">2日目ボス:</label>
+        <select id="day2">
+            <option value="">選択してください</option>
+            <option value="Margit">Margit</option>
+            <option value="Godrick">Godrick</option>
+            <option value="Red Wolf">Red Wolf of Radagon</option>
+            <option value="Rennala">Rennala, Queen of the Full Moon</option>
+            <option value="Radahn">Starscourge Radahn</option>
+            <option value="Morgott">Morgott, the Omen King</option>
+            <option value="Rykard">Rykard, Lord of Blasphemy</option>
+            <option value="Malenia">Malenia, Blade of Miquella</option>
+            <option value="Mohg">Mohg, Lord of Blood</option>
+        </select>
+        <button onclick="predictBoss()">3日目ボスを予測</button>
+        <p id="bossPrediction"></p>
+    </section>
+    
+    <section>
+        <h2>MAP表示</h2>
+        <img id="map" src="https://example.com/map.jpg" alt="ゲームMAP"> <!-- 実際のMAP画像URLに置き換え -->
+    </section>
+    
+    <section>
+        <h2>メモと攻略情報</h2>
+        <textarea id="notes" rows="10" placeholder="メモを入力"></textarea>
+        <button onclick="saveNotes()">保存</button>
+        <button onclick="loadNotes()">読み込み</button>
+        <p id="savedNotes"></p>
+    </section>
+    
+    <script>
+        const predictionMap = {
+            "Margit-Godrick": "Red Wolf",
+            "Godrick-Red Wolf": "Rennala",
+            "Red Wolf-Rennala": "Radahn",
+            "Rennala-Radahn": "Morgott",
+            "Radahn-Morgott": "Rykard",
+            "Morgott-Rykard": "Malenia",
+            "Rykard-Malenia": "Mohg",
+            "Malenia-Mohg": "Margit",
+            "Mohg-Margit": "Godrick",
+            // 必要に応じて追加
+        };
+
+        function predictBoss() {
+            const day1 = document.getElementById('day1').value;
+            const day2 = document.getElementById('day2').value;
+            const result = document.getElementById('bossPrediction');
+
+            if (!day1 || !day2) {
+                result.innerText = "両方のボスを選択してください。";
+                return;
+            }
+
+            const key = `${day1}-${day2}`;
+            const prediction = predictionMap[key] || "不明（組み合わせを調整してください）";
+            result.innerText = `予測された3日目ボス: ${prediction}`;
+        }
+        
+        function saveNotes() {
+            const notes = document.getElementById('notes').value;
+            localStorage.setItem('notes', notes);
+            alert('メモを保存しました');
+        }
+        
+        function loadNotes() {
+            const notes = localStorage.getItem('notes') || '';
+            document.getElementById('notes').value = notes;
+            document.getElementById('savedNotes').innerText = notes;
+        }
+        
+        window.onload = loadNotes;
+    </script>
+</body>
+</html>
